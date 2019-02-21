@@ -27,6 +27,7 @@ MACROS
 #define BLUE 			2
 
 #define NUMBER_OF_LEDS 	3
+#define INVALID_LED 	-1
 
 /*------------------------------------------------------------
 TYPES
@@ -40,9 +41,9 @@ VARIABLES
 ------------------------------------------------------------*/
 // Initially all of the LEDs are set to the off position
 // Tracking the current state of the LED allows us to toggle them on and off easier
-Led leds[] = {	{false, 0x22},
-				{false, 0x21},
-				{false, 0x26}
+Led leds[] = {	{false, 22},
+				{false, 26},
+				{false, 21}
 			 }; // Red, Green, Blue
 
 /*------------------------------------------------------------

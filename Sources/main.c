@@ -78,7 +78,7 @@ Player player;
 /*------------------------------------------------------------
 PROTOTYPES
 ------------------------------------------------------------*/
-void check_power_switch();
+boolean check_power_switch();
 
 void process_game_message();
 
@@ -96,8 +96,11 @@ int main(void)
 	adc_init();
 	// To-Do: Init DAC module
 
+	put_string("Test");
+
 	for(;;) {
-		check_power_switch();
+		// If the switch has been pressed toggle the power state
+		power_on ^=check_power_switch();
 		if( power_on ) {
 			if( !connected ) {
 				set_led_on( RED );
@@ -109,18 +112,33 @@ int main(void)
 				process_game_message();
 				send_player_message();
 			}
+		} else {
+			set_led_on( INVALID_LED ); // Turn all LEDS off
+
+			// Let the game know the device has been turned off and disconnect
+			if( connected ) {
+				connected = false;
+				send_player_message();
+			}
 		}
 	}
 
     return 0;
 }
 
-void check_power_switch() {
-	// Power state only changes if switch is in different position
-	power_on ^= read_switch( POWER_SWITCH );
+boolean check_power_switch() {
+	if( !read_switch( POWER_SWITCH ) ) {
+		//Switch has been pressed, wait until not
+		while( !read_switch( POWER_SWITCH ) );
+		return true;
+	}
+
+	return false;
 }
 
 void process_game_message() {
+	// To-Do: Read a message from the game
+
 	if( player.hit ) {
 		// The player was hit, we need to let the user know through
 		// the speaker on the controller
@@ -130,12 +148,12 @@ void process_game_message() {
 	}
 
 	if( player.lives == 0 ) {
-		// To-Do: Some kind of game over message
+		// To-Do: Some kind of game over message played through the speaker/LEDS
 	}
 }
 
-void send_player_message() {
-
+void send_player_message( char * String ) {
+	put_string( message + "\n" );
 }
 
 ////////////////////////////////////////////////////////////////////////////////
