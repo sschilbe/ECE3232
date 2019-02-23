@@ -17,6 +17,7 @@
 /*------------------------------------------------------------
 INCLUDES
 ------------------------------------------------------------*/
+#include "bool.h"
 
 /*------------------------------------------------------------
 MACROS
@@ -38,14 +39,14 @@ PROTOTYPES
  * Read a single character from the serial communication
  * Modules: UART0
  */
-char get_char();
+boolean get_char( char * character );
 
 /*
  * @brief
  * Read a line from the serial communication
  * Modules: UART0
  */
-void get_line();
+boolean get_line( char * string, char final_char );
 
 /*
  * @brief

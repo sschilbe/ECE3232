@@ -29,67 +29,67 @@
  */
 
 /**
-*
-* @file
-* main.c
-*
-* @brief
-* Central controlling logic for FRDM-K64F Dodge em' controller
-*
-* Author: Meneley, Julia | Schilbe, Seth
-* Data: 19/02/2019
-*/
+ *
+ * @file
+ * main.c
+ *
+ * @brief
+ * Central controlling logic for FRDM-K64F Dodge em' controller
+ *
+ * Author: Meneley, Julia | Schilbe, Seth
+ * Data: 19/02/2019
+ */
 
 /*------------------------------------------------------------
-INCLUDES
-------------------------------------------------------------*/
+ INCLUDES
+ ------------------------------------------------------------*/
 #include "adc_control.h"
 #include "bool.h"
 #include "gpio_control.h"
+#include <stdlib.h>
 #include "uart_control.h"
 
 /*------------------------------------------------------------
-MACROS
-------------------------------------------------------------*/
+ MACROS
+ ------------------------------------------------------------*/
 #define POWER_SWITCH 2
 
 /*------------------------------------------------------------
-TYPES
-------------------------------------------------------------*/
+ TYPES
+ ------------------------------------------------------------*/
 typedef struct player_struct {
-	int 	id;
-	int 	lives;
-	int 	starting_lives;
+	int id;
+	int lives;
+	int starting_lives;
 	boolean hit;
 } Player;
 
 typedef struct message_struct {
-	int 	msg_id;
-	int 	player_id;
+	int msg_id;
+	int player_id;
 } Message;
 
 /*------------------------------------------------------------
-VARIABLES
-------------------------------------------------------------*/
+ VARIABLES
+ ------------------------------------------------------------*/
 boolean power_on = false;
 boolean connected = false;
 Player player;
 
 /*------------------------------------------------------------
-PROTOTYPES
-------------------------------------------------------------*/
+ PROTOTYPES
+ ------------------------------------------------------------*/
 boolean check_power_switch();
 
-void process_game_message();
+void process_game_message(char * input_message);
 
-void send_player_message();
+void send_player_message(char * output_message, int length);
 
 /*------------------------------------------------------------
-PROCEDURES
-------------------------------------------------------------*/
+ PROCEDURES
+ ------------------------------------------------------------*/
 
-int main(void)
-{
+int main(void) {
 	// Initialize all modules that are used by the device
 	gpio_init();
 	uart_init();
@@ -97,49 +97,57 @@ int main(void)
 	// To-Do: Init DAC module
 
 	put_string("Test");
-
-	for(;;) {
+	char in[40];
+	boolean temp_power;
+	for (;;) {
 		// If the switch has been pressed toggle the power state
-		power_on ^=check_power_switch();
-		if( power_on ) {
-			if( !connected ) {
-				set_led_on( RED );
-				process_game_message();
+		temp_power = power_on;
+		if( ( power_on ^= check_power_switch() ) && !temp_power ) {
+			while( get_line( in, '\n' ) ); // Clear any messages that might be in the uart buffer when the device turns on
+		}
+
+		if (power_on) {
+			if( get_line( in, '\n' ) ) {
+				connected = ( in[0] == '0' ) ? false : true;
+			}
+			if (!connected) {
+				set_led_on( RED);
+
 			} else {
-				set_led_on( GREEN );
+				set_led_on( GREEN);
 
 				// Get the current state of the game from the serial port
-				process_game_message();
-				send_player_message();
+
 			}
 		} else {
-			set_led_on( INVALID_LED ); // Turn all LEDS off
+			set_led_on( INVALID_LED); // Turn all LEDS off
 
 			// Let the game know the device has been turned off and disconnect
-			if( connected ) {
+			if (connected) {
 				connected = false;
-				send_player_message();
+
 			}
 		}
 	}
 
-    return 0;
+	return 0;
 }
 
 boolean check_power_switch() {
-	if( !read_switch( POWER_SWITCH ) ) {
+	if (!read_switch( POWER_SWITCH)) {
 		//Switch has been pressed, wait until not
-		while( !read_switch( POWER_SWITCH ) );
+		while (!read_switch( POWER_SWITCH))
+			;
 		return true;
 	}
 
 	return false;
 }
 
-void process_game_message() {
+void process_game_message(char * message) {
 	// To-Do: Read a message from the game
 
-	if( player.hit ) {
+	if (player.hit) {
 		// The player was hit, we need to let the user know through
 		// the speaker on the controller
 		// To-Do: Play sound through speaker based on number of lives player has remaining
@@ -147,13 +155,15 @@ void process_game_message() {
 		player.lives--;
 	}
 
-	if( player.lives == 0 ) {
+	if (player.lives == 0) {
 		// To-Do: Some kind of game over message played through the speaker/LEDS
 	}
 }
 
-void send_player_message( char * String ) {
-	put_string( message + "\n" );
+void send_player_message(char * message, int length) {
+	realloc(message, length + 1);
+	message[length] = '\0';
+	put_string(message);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

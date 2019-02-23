@@ -10,7 +10,7 @@ Sources/uart_control.o: ../Sources/uart_control.c \
  ../SDK/platform/devices/MK64F12/include/MK64F12.h \
  ../SDK/platform/devices/MK64F12/include/fsl_bitaccess.h \
  ../SDK/platform/devices/MK64F12/include/MK64F12_features.h \
- ../Sources/uart_control.h
+ ../Sources/uart_control.h ../Sources/bool.h
 
 ../SDK/platform/devices/fsl_device_registers.h:
 
@@ -35,3 +35,5 @@ Sources/uart_control.o: ../Sources/uart_control.c \
 ../SDK/platform/devices/MK64F12/include/MK64F12_features.h:
 
 ../Sources/uart_control.h:
+
+../Sources/bool.h:

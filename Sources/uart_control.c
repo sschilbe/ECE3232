@@ -32,15 +32,28 @@ VARIABLES
 /*------------------------------------------------------------
 PROTOTYPES
 ------------------------------------------------------------*/
-char get_char() {
-	// Poll RDRF until there is a character to be received
-	while( !( UART0_S1 & 0x20 ) ) {}
+boolean get_char( char * character) {
 
-	return (char)UART0_D;
+	if( ( UART0_S1 & 0x20 ) ) {
+		*character = UART0_D;
+		return true;
+	}
+
+	return false;
 }
 
-void get_line( char * string ) {
-	//To-Do: Implement function to get line of arbitrary length
+boolean get_line( char * string, char final_char ) {
+	int length = 0;
+	char character;
+	boolean line_present = false;
+
+	while( ( get_char( &character ) ) != false && ( character != final_char ) ) {
+		string[length++] = character;
+		line_present = true;
+	}
+
+	string[length] = '\0'; // Null terminate the string
+	return line_present;
 }
 
 void uart_init() {
