@@ -5,18 +5,21 @@
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
 ../Sources/adc_control.c \
+../Sources/communication_controller.c \
 ../Sources/gpio_control.c \
 ../Sources/main.c \
 ../Sources/uart_control.c 
 
 OBJS += \
 ./Sources/adc_control.o \
+./Sources/communication_controller.o \
 ./Sources/gpio_control.o \
 ./Sources/main.o \
 ./Sources/uart_control.o 
 
 C_DEPS += \
 ./Sources/adc_control.d \
+./Sources/communication_controller.d \
 ./Sources/gpio_control.d \
 ./Sources/main.d \
 ./Sources/uart_control.d 

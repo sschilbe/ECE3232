@@ -83,8 +83,6 @@ boolean check_power_switch();
 
 void process_game_message(char * input_message);
 
-void send_player_message(char * output_message, int length);
-
 /*------------------------------------------------------------
  PROCEDURES
  ------------------------------------------------------------*/
@@ -136,8 +134,7 @@ int main(void) {
 boolean check_power_switch() {
 	if (!read_switch( POWER_SWITCH)) {
 		//Switch has been pressed, wait until not
-		while (!read_switch( POWER_SWITCH))
-			;
+		while (!read_switch( POWER_SWITCH));
 		return true;
 	}
 
@@ -158,12 +155,6 @@ void process_game_message(char * message) {
 	if (player.lives == 0) {
 		// To-Do: Some kind of game over message played through the speaker/LEDS
 	}
-}
-
-void send_player_message(char * message, int length) {
-	realloc(message, length + 1);
-	message[length] = '\0';
-	put_string(message);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

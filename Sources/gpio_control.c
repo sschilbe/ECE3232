@@ -1,10 +1,10 @@
 /**
 *
 * @file
-* gpio_control.h
+* gpio_control.c
 *
 * @brief
-* Interface for controlling GPIO module
+* Implementation for controlling GPIO module
 *
 * Author: Meneley, Julia | Schilbe, Seth
 * Created on: 19/02/2019
