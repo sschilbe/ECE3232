@@ -62,7 +62,7 @@ void uart_init();
  * Write a single character to the serial communication
  * Modules: UART0
  */
-void out_char( char * out );
+void out_char( char out );
 
 /*
  * @brief

@@ -37,7 +37,8 @@
  * Central controlling logic for FRDM-K64F Dodge em' controller
  *
  * Author: Meneley, Julia | Schilbe, Seth
- * Data: 19/02/2019
+ * Date Created: 19/02/2019
+ * Last Modified: 03/03/2019
  */
 
 /*------------------------------------------------------------
@@ -45,8 +46,11 @@
  ------------------------------------------------------------*/
 #include "adc_control.h"
 #include "bool.h"
+#include "communication_controller.h"
+#include "ftm_control.h"
 #include "gpio_control.h"
-#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 #include "uart_control.h"
 
 /*------------------------------------------------------------
@@ -64,24 +68,22 @@ typedef struct player_struct {
 	boolean hit;
 } Player;
 
-typedef struct message_struct {
-	int msg_id;
-	int player_id;
-} Message;
-
 /*------------------------------------------------------------
  VARIABLES
  ------------------------------------------------------------*/
 boolean power_on = false;
 boolean connected = false;
-Player player;
+boolean game_started = false;
+Player  player;
 
 /*------------------------------------------------------------
  PROTOTYPES
  ------------------------------------------------------------*/
 boolean check_power_switch();
 
-void process_game_message(char * input_message);
+void fill_player_message( esp_msg * message, Player player, int msg_id );
+
+void process_game_message( esp_msg * message );
 
 /*------------------------------------------------------------
  PROCEDURES
@@ -92,38 +94,40 @@ int main(void) {
 	gpio_init();
 	uart_init();
 	adc_init();
-	// To-Do: Init DAC module
+	ftm_init();
 
-	put_string("Test");
-	char in[40];
 	boolean temp_power;
+	esp_msg message;
+	memset( &message, 0, sizeof( message ) );
+
 	for (;;) {
 		// If the switch has been pressed toggle the power state
 		temp_power = power_on;
 		if( ( power_on ^= check_power_switch() ) && !temp_power ) {
-			while( get_line( in, '\n' ) ); // Clear any messages that might be in the uart buffer when the device turns on
+			set_led_on( RED );
+			while( get_line( NULL, '\n' ) ); // Clear any messages that might be in the uart buffer when the device turns on
 		}
 
 		if (power_on) {
-			if( get_line( in, '\n' ) ) {
-				connected = ( in[0] == '0' ) ? false : true;
-			}
-			if (!connected) {
-				set_led_on( RED);
+			message = get_game_message();
+			process_game_message( &message );
 
-			} else {
-				set_led_on( GREEN);
-
-				// Get the current state of the game from the serial port
-
+			if( game_started ) {
+				// Send the accelerometer data to the game
+				message.x = -1.0;
+				message.y = 0;
+				message.z = 0;
+				fill_player_message( &message, player, PLAYER_DATA_EVENT );
+				send_player_message( &message );
 			}
 		} else {
-			set_led_on( INVALID_LED); // Turn all LEDS off
+			set_led_on( INVALID_LED ); // Turn all LEDS off
 
 			// Let the game know the device has been turned off and disconnect
-			if (connected) {
+			if ( connected ) {
 				connected = false;
-
+				fill_player_message( &message, player, DISCONNECT_EVENT );
+				send_player_message( &message );
 			}
 		}
 	}
@@ -141,20 +145,51 @@ boolean check_power_switch() {
 	return false;
 }
 
-void process_game_message(char * message) {
-	// To-Do: Read a message from the game
 
-	if (player.hit) {
-		// The player was hit, we need to let the user know through
-		// the speaker on the controller
-		// To-Do: Play sound through speaker based on number of lives player has remaining
+void process_game_message( esp_msg * message ) {
+	esp_msg response;
+	memset( &response, 0, sizeof( response ) );
 
-		player.lives--;
+	switch( message->msg_id ) {
+		case INVALID_EVENT:
+			// We either didn't get an event or the controller received an invalid event
+			break;
+		case CONNECT_EVENT:
+			connected = true;
+			player.id = message->player_id;
+			player.lives = player.starting_lives = message->lives;
+
+			set_led_on( GREEN );
+
+			fill_player_message( &response, player, CONNECT_EVENT );
+			send_player_message( &response );
+			break;
+		case DISCONNECT_EVENT:
+			set_led_on( RED );
+			connected = false;
+			break;
+		case GAME_START_EVENT:
+			game_started = true;
+			break;
+		case PLAYER_HIT_EVENT:
+			// The game was reset and we didn't get a message, reset the player accordingly
+			if( message->lives >= player.lives ) {
+				player.lives = message->lives;
+				player.starting_lives = message->lives+1;
+			} else {
+				player.lives--;
+			}
+
+			// Play a tone on the speaker as a ratio of the current lives compared with the starting lives
+			buzz( 3000 + (1000 * ( player.starting_lives - 1 - player.lives ) ), 2.0 );
+			break;
 	}
+}
 
-	if (player.lives == 0) {
-		// To-Do: Some kind of game over message played through the speaker/LEDS
-	}
+void fill_player_message( esp_msg * message, Player player, int msg_id ) {
+	message->msg_id = msg_id;
+	message->player_id = player.id;
+	message->connected = connected;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
