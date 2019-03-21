@@ -45,6 +45,8 @@ boolean get_char( char * character) {
 }
 
 boolean get_line( char * string, char final_char ) {
+	const int MAX_TIMEOUT = 5000;
+	int timeout = 0;
 	int length = 0;
 	char character;
 	boolean line_present = false;
@@ -52,8 +54,15 @@ boolean get_line( char * string, char final_char ) {
 	while( ( get_char( &character ) || length > 0 ) && ( character != final_char ) ) {
 		if( string != NULL && character != '~') {
 			string[length++] = character;
+			line_present = true;
+		} else {
+			timeout++;
 		}
-		line_present = true;
+
+		if( timeout >= MAX_TIMEOUT ) {
+			line_present = false;
+			break;
+		}
 	}
 
 	if( string != NULL && length > 0 ) {

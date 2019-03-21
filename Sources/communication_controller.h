@@ -45,8 +45,8 @@ typedef struct message_type {
 	boolean 	hit;
 	int			lives;
 	int			x;
-	int 		y;
-	int 		z;
+	int			y;
+	int	 		z;
 } esp_msg; // Embedded Serial Protocol
 
 /*------------------------------------------------------------

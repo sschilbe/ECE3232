@@ -14,6 +14,7 @@
 /*------------------------------------------------------------
 INCLUDES
 ------------------------------------------------------------*/
+#include "dac_control.h"
 #include "ftm_control.h"
 #include "fsl_device_registers.h"
 
@@ -28,96 +29,119 @@ TYPES
 /*------------------------------------------------------------
 VARIABLES
 ------------------------------------------------------------*/
+static int mod = 2100 / 4; // mod to allow for a shorter delay
 
 /*------------------------------------------------------------
 PROCEDURES
 ------------------------------------------------------------*/
-void ftm_init( void ) {
-	// NO CLOCK IS SELECTED FOR FTM2_SC_CLKS SO THE SQUARE WAVE WILL NOT START UNTIL THE buzz() FUNCTION IS CALLED UPON
-
-	/*
-	 * We want to produce a 50% duty cycle square wave with an amplitude which will be determined by the ADC somehow (cross that bridge when you get to it). Use either the
-	 * prescale factor or the modulo value to determine the frequency. It will probably be easier to use the modulo value. For 50% duty cycle, we can just toggle every time
-	 * the counter gets to the final value. This means the time required to get to the final value should be 1/2 of the period.
-	 */
-	SIM_SCGC5 |= SIM_SCGC5_PORTB_MASK;	// enables port B clock
-	SIM_SCGC6 |= SIM_SCGC6_FTM2_MASK; 	// Enable the FTM2 Clock
-	PORTB_PCR18 |= PORT_PCR_MUX( 3 ); // MUX port B19 to FTM2_CH0
-
-	/*
-	 * status and control reg 1 (default -> all zero)
-	 * bit7: (TOF) timer overflow flag (0 -> FTM counter has not overflowed, 1 -> FTM counter has overflowed)
-	 * bit6: (TOIE) timer overflow interrupt enabled (0 -> disable, default)
-	 * bit4-3: (CLKS) clock source selection (00 -> no clock, 01 -> system clock, 10 -> fixed frequency clock, 11 -> external cock)
-	 * bit2-0: prescale factor (000 -> divide by 1) write protected therefore can only overwrite when MODE[WPDIS]=1
-	 */
-
-	FTM2_SC |= ( 0b000 << 0 ); // selects prescale factor of 1
-
-	FTM2_MODE |= 0x01; // enable all registers in the FTM2 module with no restrcitions
-
-	FTM2_MOD = 0xA41; // should give a 4 kHz square wave (based off of the system clock being 21 MHz)
-	FTM2_C0V = 0x0; // this is the value that the count value will be compared to
-
-	/*
-	 * Use table 40-67 to determine the values in the FTMx_CnSC register to get 'Toggle Output on Match'
-	 */
-	FTM2_C0SC = ( 0b0101 << 2 ); // MSnB,MSnA,ELSnB,ELSnA
-
-	// Initial value of output channel
-	FTM2_OUTINIT |= 0x00; // default is all zeros, this doesn't actually change anything
-	FTM2_CNTIN = 0x00;
-
-	// FTMx_OUTMASK -> default is all unmasked, leave it this way
-
-	// FTMx_CONF -> configure the number of times the FTM counter should overflow before TOF flag is set. default is
-	// 0 which will set the flag each time the counter overflows. When there is a match on channel 5, reset the counter of channel 5 to zero
+void FTM2_IRQHandler( void ) {
+	mod++; // Dummy line so that a breakpoint can be set here
 }
 
-void buzz( int f_set, float t_set ) {
-	float f_clk, T_set, time_to_overflow;
-	int counts_in_period, num_of_overflows;
+void ftm_init( void ) {
+	dac_init();
 
-	// Handle the Inputs
-	if( f_set < 3000 ) {
-		f_set = 3000;
-	} else if( f_set > 5000 ) {
-		f_set = 5000;
-	}
-	if( t_set < 0 ) {
-		t_set = 0;
-	} else if( t_set > 10 ){
-		t_set = 10;
-	}
+	// NO CLOCK IS SELECTED FOR FTM2_SC_CLKS SO THE SQUARE WAVE WILL NOT START UNTIL THE buzz() FUNCTION IS CALLED UPON
 
-	// Frequency Calculations
-	f_clk = 21000000; // module clock is 21 MHz
-	T_set = 1.0 / f_set; // period of desired square wave (sec)
-	counts_in_period = ( T_set * f_clk ) / 2;
+	SIM_SCGC5 |= SIM_SCGC5_PORTB_MASK;	// enables port B clock
+	SIM_SCGC6 |= SIM_SCGC6_FTM2_MASK; 	// Enable the FTM2 Clock
+	PORTB_PCR18 |= PORT_PCR_MUX(3); // MUX port B19 to FTM2_CH0
 
-	FTM2_MOD |= counts_in_period;
+	//Turn Write Protection Off
+	FTM2_MODE |= FTM_MODE_WPDIS_MASK;
 
-	// Time Calculations
-	// How long will it take for the counter to reach its final value? This should be half of the intended period of the square wave.
-	time_to_overflow = 0.5 * ( 1.0 / f_set );
-	// how many overflows should occur before this amount of time has passed?
-	num_of_overflows = t_set / time_to_overflow;
-	// make this number even so it will start with the output being low, and end that way too
-	if( !( num_of_overflows % 2 == 0 ) ){
-		num_of_overflows++;
-	}
+	FTM2_SC |= (0b000 << 0); // selects pre-scale factor of 1 (default)
+	FTM2_SC |= (0b1 << 6 ); // Enable timer overflow interrupt
+
+	FTM2_CNTIN = 0x00; // Initial value of counter = 0
+	FTM2_MOD = mod;
+
+	//Set MSB=1 and ELSnB=1
+	// This is output compare and will toggle the channel value each time the counter reaches the value specified in FTM0_C0V
+	// (doesn't really matter in this case sense we just want to know when there is a overflow)
+	FTM2_C0SC |= 0x28;
+
+	NVIC_EnableIRQ( FTM2_IRQn );
+}
+
+void myDelay( float time ) {
+
+	/*
+	 * This is an altered version of the code submitted for ECE3232 assignment 3. Enter a time of 0.000125 to result in a squarewave of
+	 * frequency 4 kHz.
+	 *
+	 */
+
+	int count = 0;
+
+	float f_clk, t_over;
+	int num_over;
+
+	//f_clk = 21000000; // module clock is 21 MHz
+	//t_over = 0xFFFF / f_clk; // time to reach one overflow (0.003121 sec)
+	//num_over = time / t_over ; // how many overflows need to be reached?
+
+	num_over = (time *21000000)/mod ; // how many overflows need to be reached?
 
 	FTM2_SC |= (0b1000); // selects the system clock
 
-	while( num_of_overflows ) {
-		if( FTM2_SC & ( 0b1 << 7 ) ) {
-			num_of_overflows--; // decrement the number of overflows
-			FTM2_SC &= !( 0b1 << 7 ); // reset the flag back to 0
-		}
+	while(num_over){
+		while( !(FTM2_SC & (0b1 << 7)) ){}// wait until the TOF (timer overflow) flag is set to 1
+		num_over--; // decrement the number of overflows
+		FTM2_SC &= !(0b1 << 7); // reset the flag back to 0
 		FTM2_SC |= (0b1000); // selects the system clock
 	}
 
-	FTM2_SC &= !( 0b11 << 3 ); // selects no clock therefore disables channel
+	FTM2_SC &= !(0b11 << 3); // selects no clock therefore disables channel
 
-	//FTM2_OUTINIT |= 0x00; // default is all zeros, this doesn't actually change anything
+}
+
+void buzz( float V_out, float freq, float time ) {
+	/*
+	 * Inputs:
+	 * 		V_out - the voltage of the 'high' part of the square wave. This should also be the peak to peak value.
+	 * 		freq - the frequency of the square wave to be sent limited to 1.5 kHz to 4.5 kHz
+	 * 		time - the amount of time (seconds) the buzzer will play for limited to 0 to 10 seconds
+	 */
+
+	// deal with frequency inputs (V_out will be handles in setDAC)
+	if(freq > 4500){
+		freq = 4500;
+	}
+	else if(freq < 1500){
+		freq = 1500;
+	}
+
+	// deal with frequency inputs (V_out will be handles in setDAC)
+	if(time > 10){
+		time = 10;
+	}
+	else if(time < 0){
+		time = 0;
+	}
+
+	// find the time required to delay for the given frequency
+	float t_delay = 1/(2*freq);
+
+	// find out how many periods should be completed
+	int count = time * freq;
+
+
+	while(count){
+	// This loop will take approximately 1/freq seconds to complete
+
+		// set the value that the DAC will output to the 'high' value
+		setDAC(V_out);
+
+		// delay the program
+		myDelay(t_delay);
+
+		// set the value that the DAC will output to the 'low' value
+		setDAC(0); // won't actually be zero (0.806 mV), but hopefully close enough
+
+		// delay the program
+		myDelay(t_delay);
+
+		count--;
+	}
 }

@@ -44,6 +44,7 @@
 /*------------------------------------------------------------
  INCLUDES
  ------------------------------------------------------------*/
+#include "acceleration_control.h"
 #include "adc_control.h"
 #include "bool.h"
 #include "communication_controller.h"
@@ -73,24 +74,25 @@ typedef struct player_struct {
  ------------------------------------------------------------*/
 boolean power_on = false;
 boolean connected = false;
+boolean configured = false;
 boolean game_started = false;
-Player  player;
+Player player;
 
 /*------------------------------------------------------------
  PROTOTYPES
  ------------------------------------------------------------*/
 boolean check_power_switch();
 
-void fill_player_message( esp_msg * message, Player player, int msg_id );
+void fill_player_message(esp_msg * message, Player player, int msg_id);
 
-void process_game_message( esp_msg * message );
+void process_game_message(esp_msg * message);
 
 /*------------------------------------------------------------
  PROCEDURES
  ------------------------------------------------------------*/
-
 int main(void) {
 	// Initialize all modules that are used by the device
+	acceleration_init();
 	gpio_init();
 	uart_init();
 	adc_init();
@@ -98,36 +100,51 @@ int main(void) {
 
 	boolean temp_power;
 	esp_msg message;
-	memset( &message, 0, sizeof( message ) );
+	float * acceleration_data;
+	memset(&message, 0, sizeof(message));
+
+	myDelay( 1.0 );
 
 	for (;;) {
 		// If the switch has been pressed toggle the power state
 		temp_power = power_on;
-		if( ( power_on ^= check_power_switch() ) && !temp_power ) {
-			set_led_on( RED );
-			while( get_line( NULL, '\n' ) ); // Clear any messages that might be in the uart buffer when the device turns on
+		if ((power_on ^= check_power_switch()) && !temp_power) {
+			set_led_on( RED);
+			while (get_line( NULL, '\n'))
+				; // Clear any messages that might be in the uart buffer when the device turns on
 		}
 
 		if (power_on) {
 			message = get_game_message();
-			process_game_message( &message );
+			process_game_message(&message);
 
-			if( game_started ) {
-				// Send the accelerometer data to the game
-				message.x = -1.0;
-				message.y = 0;
-				message.z = 0;
-				fill_player_message( &message, player, PLAYER_DATA_EVENT );
-				send_player_message( &message );
+			if (connected) {
+				if (!configured) {
+					configure_acceleration();
+					configured = true;
+				}
+
+				read_acceleration_data();
+
+				if (game_started) {
+					// Send the accelerometer data to the game
+					acceleration_data = get_unity_acceleration();
+					message.x = 1000 * acceleration_data[0];
+					message.y = 1000 * acceleration_data[1];
+					message.z = 1000 * acceleration_data[2];
+
+					fill_player_message(&message, player, PLAYER_DATA_EVENT);
+					send_player_message(&message);
+				}
 			}
 		} else {
-			set_led_on( INVALID_LED ); // Turn all LEDS off
+			set_led_on( INVALID_LED); // Turn all LEDS off
 
 			// Let the game know the device has been turned off and disconnect
-			if ( connected ) {
+			if (connected) {
 				connected = false;
-				fill_player_message( &message, player, DISCONNECT_EVENT );
-				send_player_message( &message );
+				fill_player_message(&message, player, DISCONNECT_EVENT);
+				send_player_message(&message);
 			}
 		}
 	}
@@ -138,60 +155,59 @@ int main(void) {
 boolean check_power_switch() {
 	if (!read_switch( POWER_SWITCH)) {
 		//Switch has been pressed, wait until not
-		while (!read_switch( POWER_SWITCH));
+		while (!read_switch( POWER_SWITCH))
+			;
 		return true;
 	}
 
 	return false;
 }
 
-
-void process_game_message( esp_msg * message ) {
+void process_game_message(esp_msg * message) {
 	esp_msg response;
-	memset( &response, 0, sizeof( response ) );
+	memset(&response, 0, sizeof(response));
 
-	switch( message->msg_id ) {
-		case INVALID_EVENT:
-			// We either didn't get an event or the controller received an invalid event
-			break;
-		case CONNECT_EVENT:
-			connected = true;
-			player.id = message->player_id;
-			player.lives = player.starting_lives = message->lives;
+	switch (message->msg_id) {
+	case INVALID_EVENT:
+		// We either didn't get an event or the controller received an invalid event
+		break;
+	case CONNECT_EVENT:
+		connected = true;
+		player.id = message->player_id;
+		player.lives = player.starting_lives = message->lives;
 
-			set_led_on( GREEN );
+		set_led_on( GREEN);
 
-			fill_player_message( &response, player, CONNECT_EVENT );
-			send_player_message( &response );
-			break;
-		case DISCONNECT_EVENT:
-			set_led_on( RED );
-			connected = false;
-			break;
-		case GAME_START_EVENT:
-			game_started = true;
-			break;
-		case PLAYER_HIT_EVENT:
-			// The game was reset and we didn't get a message, reset the player accordingly
-			if( message->lives >= player.lives ) {
-				player.lives = message->lives;
-				player.starting_lives = message->lives+1;
-			} else {
-				player.lives--;
-			}
+		fill_player_message(&response, player, CONNECT_EVENT);
+		send_player_message(&response);
+		break;
+	case DISCONNECT_EVENT:
+		set_led_on( RED);
+		connected = false;
+		break;
+	case GAME_START_EVENT:
+		game_started = true;
+		break;
+	case PLAYER_HIT_EVENT:
+		// The game was reset and we didn't get a message, reset the player accordingly
+		if (message->lives >= player.lives) {
+			player.lives = message->lives;
+			player.starting_lives = message->lives + 1;
+		} else {
+			player.lives--;
+		}
 
-			// Play a tone on the speaker as a ratio of the current lives compared with the starting lives
-			buzz( 3000 + (1000 * ( player.starting_lives - 1 - player.lives ) ), 2.0 );
-			break;
+		// Play a tone on the speaker as a ratio of the current lives compared with the starting lives
+		buzz( 2.0, 3000 + (1000 * (player.starting_lives - 1 - player.lives)), 2.0);
+		break;
 	}
 }
 
-void fill_player_message( esp_msg * message, Player player, int msg_id ) {
+void fill_player_message(esp_msg * message, Player player, int msg_id) {
 	message->msg_id = msg_id;
 	message->player_id = player.id;
 	message->connected = connected;
 }
-
 ////////////////////////////////////////////////////////////////////////////////
 // EOF
 ////////////////////////////////////////////////////////////////////////////////

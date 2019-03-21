@@ -33,6 +33,8 @@ VARIABLES
 /*------------------------------------------------------------
 PROTOTYPES
 ------------------------------------------------------------*/
+void FTM2_IRQHandler( void );
+
 /*
  * @brief
  * Initialize the FTM module, no clock is selected so no wave
@@ -42,17 +44,21 @@ PROTOTYPES
  */
 void ftm_init(void);
 
+
+void myDelay( float time );
+
 /*
  * @brief
- * This function will accept a frequency (Hz) and an amount of time (sec) for this frequency to play.
+ * This function will accept a voltage level (V) frequency (Hz) and an amount of time (sec) for this frequency to play.
  * 	Inputs:
- * 		f_set -> The frequency of square wave to be sent to the buzzer. Must be within 3000 and 5000.
- * 		t_set -> The time that this frequency should be played for. Must be within 0 and 10 sec.
+ * 		V_out -> The maximum voltage that should be outputted on the sine wave
+ * 		freq -> The frequency of wave to be sent to the buzzer. Must be within 3000 and 5000.
+ * 		time -> The time that this frequency should be played for. Must be within 0 and 10 sec.
  *
  * Ports: B, FTM2
  * Pins: B19
  */
-void buzz(int f_set, float t_set);
+void buzz( float V_out, float freq, float time );
 
 #endif /* SOURCES_FTM_CONTROL_H_ */
 
