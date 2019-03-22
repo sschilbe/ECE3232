@@ -33,19 +33,32 @@ VARIABLES
 /*------------------------------------------------------------
 PROTOTYPES
 ------------------------------------------------------------*/
+void FTM1_IRQHandler( void );
+
 void FTM2_IRQHandler( void );
+
+/*
+ * @brief
+ * Initialize the FTM1 module to track time
+ * Ports: FTM1
+ */
+void FTM1_init( void );
 
 /*
  * @brief
  * Initialize the FTM module, no clock is selected so no wave
  * will be output until the buzz function is called
+ *
+ * Inputs:
+ * 		mod -> the value to be placed into the MOD register for the timer
+ *
  * Ports: B, FTM2
  * Pins: B19
  */
-void ftm_init(void);
+void FTM2_init( int mod );
 
 
-void myDelay( float time );
+void myBlockingDelay( float time );
 
 /*
  * @brief

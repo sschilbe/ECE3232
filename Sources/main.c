@@ -96,14 +96,13 @@ int main(void) {
 	gpio_init();
 	uart_init();
 	adc_init();
-	ftm_init();
 
 	boolean temp_power;
 	esp_msg message;
 	float * acceleration_data;
 	memset(&message, 0, sizeof(message));
 
-	myDelay( 1.0 );
+	myBlockingDelay( 1.0 );
 
 	for (;;) {
 		// If the switch has been pressed toggle the power state
