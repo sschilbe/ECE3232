@@ -45,7 +45,7 @@ boolean get_char( char * character) {
 }
 
 boolean get_line( char * string, char final_char ) {
-	const int MAX_TIMEOUT = 5000;
+	const int MAX_TIMEOUT = 100000;
 	int timeout = 0;
 	int length = 0;
 	char character;

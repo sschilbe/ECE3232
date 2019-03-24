@@ -8,7 +8,7 @@
 *
 * Author: Meneley, Julia | Schilbe, Seth
 * Created on: 23/02/2019
-* Last Modified: 03/03/2019
+* Last Modified: 24/03/2019
 */
 
 /*------------------------------------------------------------
@@ -18,7 +18,6 @@ INCLUDES
 #include "uart_control.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 /*------------------------------------------------------------
 MACROS
@@ -37,6 +36,20 @@ char out[MESSAGE_BUFFER_SIZE] = {0};
 /*------------------------------------------------------------
 PROCEDURES
 ------------------------------------------------------------*/
+/* HELPER */
+/*
+ * @brief
+ * Stringify the player message to prepare it for serial transmission
+ *
+ * Modules: None
+ * Pins: None
+ */
+void format_player_message( esp_msg * message );
+
+/*
+ * @brief
+ * get_game_message(), see communication_controller.h for more info
+ */
 esp_msg get_game_message() {
 	esp_msg message;
 	message.msg_id = INVALID_EVENT;
@@ -52,6 +65,10 @@ esp_msg get_game_message() {
 	return message;
 }
 
+/*
+ * @brief
+ * send_player_message(), see communication_controller.h for more info
+ */
 void send_player_message( esp_msg * message ) {
 	format_player_message( message );
 	put_string( out );

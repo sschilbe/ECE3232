@@ -8,7 +8,7 @@
 *
 * Author: Meneley, Julia | Schilbe, Seth
 * Created on: 23/02/2019
-* Last Modified: 23/02/2019
+* Last Modified: 24/03/2019
 */
 
 #ifndef SOURCES_COMMUNICATION_CONTROLLER_H_
@@ -18,13 +18,12 @@
 INCLUDES
 ------------------------------------------------------------*/
 #include "bool.h"
-#include <stdint.h>
 
 /*------------------------------------------------------------
 MACROS
 ------------------------------------------------------------*/
-#define INVALID_PLAYER_ID 0xFF
-#define MESSAGE_BUFFER_SIZE 50
+#define INVALID_PLAYER_ID 	( 0xFF )
+#define MESSAGE_BUFFER_SIZE ( 50 )
 
 /*------------------------------------------------------------
 TYPES
@@ -39,8 +38,8 @@ typedef enum {
 } msg_id;
 
 typedef struct message_type {
-	uint16_t	msg_id;
-	uint8_t		player_id;
+	int			msg_id;
+	int			player_id;
 	boolean		connected;
 	boolean 	hit;
 	int			lives;
@@ -56,10 +55,28 @@ VARIABLES
 /*------------------------------------------------------------
 PROTOTYPES
 ------------------------------------------------------------*/
+/*
+ * @brief
+ * Use the uart module to read in a game message from the serial protocol
+ *
+ * Modules: uart_controller
+ * Pins: None
+ *
+ * Return
+ *  -> esp_msg - message to the controller from the UNITY game
+ */
 esp_msg get_game_message();
 
-void format_player_message( esp_msg * message );
-
+/*
+ * @brief
+ * Use the uart module to write a game message to the serial protocol
+ *
+ * Modules: uart_controller
+ * Pins: None
+ *
+ * Input
+ *  -> esp_msg - message to the UNITY game from the controller
+ */
 void send_player_message( esp_msg * message );
 
 #endif /* SOURCES_COMMUNICATION_CONTROLLER_H_ */

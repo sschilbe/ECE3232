@@ -45,7 +45,6 @@
  INCLUDES
  ------------------------------------------------------------*/
 #include "acceleration_control.h"
-#include "adc_control.h"
 #include "bool.h"
 #include "communication_controller.h"
 #include "ftm_control.h"
@@ -57,7 +56,8 @@
 /*------------------------------------------------------------
  MACROS
  ------------------------------------------------------------*/
-#define POWER_SWITCH 2
+#define POWER_SWITCH 	2
+#define N 				11
 
 /*------------------------------------------------------------
  TYPES
@@ -87,6 +87,10 @@ void fill_player_message(esp_msg * message, Player player, int msg_id);
 
 void process_game_message(esp_msg * message);
 
+float v[N+1] = {1.0,1.5,2.0,2.5,3.0,2.0,2.0,2.0,2.0,2.0,2.0,0};
+float f[N+1] = {1500,1500,1500,1500,1500,1000,1500,2000,2500,3000,3500,0};
+float t[N+1] = {0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0};
+
 /*------------------------------------------------------------
  PROCEDURES
  ------------------------------------------------------------*/
@@ -95,14 +99,11 @@ int main(void) {
 	acceleration_init();
 	gpio_init();
 	uart_init();
-	adc_init();
 
 	boolean temp_power;
 	esp_msg message;
 	float * acceleration_data;
 	memset(&message, 0, sizeof(message));
-
-	myBlockingDelay( 1.0 );
 
 	for (;;) {
 		// If the switch has been pressed toggle the power state
@@ -188,18 +189,29 @@ void process_game_message(esp_msg * message) {
 		game_started = true;
 		break;
 	case PLAYER_HIT_EVENT:
-		// The game was reset and we didn't get a message, reset the player accordingly
-		if (message->lives >= player.lives) {
-			player.lives = message->lives;
-			player.starting_lives = message->lives + 1;
-		} else {
-			player.lives--;
-		}
+		if( get_lost_life_count() <= 0 ) {
+			// The game was reset and we didn't get a message, reset the player accordingly
+			fill_player_message(&response, player, PLAYER_HIT_EVENT);
+			send_player_message(&response);
 
-		// Play a tone on the speaker as a ratio of the current lives compared with the starting lives
-		buzz( 2.0, 3000 + (1000 * (player.starting_lives - 1 - player.lives)), 2.0);
-		break;
+			if (message->lives >= player.lives) {
+				player.lives = message->lives;
+				player.starting_lives = message->lives + 1;
+			} else {
+				player.lives--;
+			}
+
+			for( int i = 0; i < N; i++ ) {
+				f[i] += 1000;
+			}
+			// Play a tone on the speaker as a ratio of the current lives compared with the starting lives
+			play_buzzer(v,f,t,11);
+			reset_lost_life_count();
+			break;
+		}
 	}
+
+	while (get_line( NULL, '\n')); // Clear any messages that might be in the uart buffer when the device turns on
 }
 
 void fill_player_message(esp_msg * message, Player player, int msg_id) {

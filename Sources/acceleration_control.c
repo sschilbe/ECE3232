@@ -1,14 +1,14 @@
 /**
 *
 * @file
-* adc_control.c
+* acceleration_control.c
 *
 * @brief
 * Implementation for controlling acceleration data
 *
 * Author: Meneley, Julia | Schilbe, Seth
 * Created on: 15/03/2019
-* Last Modified: 15/03/2019
+* Last Modified: 24/03/2019
 */
 
 
@@ -16,15 +16,24 @@
 INCLUDES
 ------------------------------------------------------------*/
 #include "acceleration_control.h"
-#include "adc_control.h"
 #include "fsl_device_registers.h"
 
 /*------------------------------------------------------------
 MACROS
 ------------------------------------------------------------*/
-#define X_AXIS 0
-#define Y_AXIS 1
-#define Z_AXIS 2
+#define X_AXIS 						( 0 )
+#define Y_AXIS 						( 1 )
+#define Z_AXIS 						( 2 )
+
+#define ORIGINAL_MIN 				( 0 )
+#define ORIGINAL_MAX 				( 0xFFFF )
+#define SCALED_MIN 					( 0.0 )
+#define SCALED_MAX					( 3.3 )
+#define UNITY_MIN 					( -1.0 )
+#define UNITY_MAX					( 1.0 )
+
+#define NUMBER_OF_AXIS				( 3 )
+#define MAX_ACCELERATION_READINGS 	( 5 )
 
 /*------------------------------------------------------------
 TYPES
@@ -33,10 +42,6 @@ TYPES
 /*------------------------------------------------------------
 VARIABLES
 ------------------------------------------------------------*/
-int	ORIGINAL_MIN = 0, ORIGINAL_MAX = 0xFFFF;
-float SCALED_MIN = 0.0, SCALED_MAX = 3.3;
-float UNITY_MIN = -1.0, UNITY_MAX = 1.0;
-
 int acceleration_readings = 0;
 float acceleration_data[MAX_ACCELERATION_READINGS][NUMBER_OF_AXIS];
 float average_acceleration[NUMBER_OF_AXIS];
@@ -46,9 +51,26 @@ float zero_acceleration[NUMBER_OF_AXIS];
 PROCEDURES
 ------------------------------------------------------------*/
 /* HELPER */
+/*
+ * @brief
+ * Linearly scales an original int to a float value inbetween a scale range
+ * Modules: None
+ * Pins: None
+ */
 float int_acceleration_scale( int x, int original_min, int original_max, float scaled_min, float scaled_max );
+
+/*
+ * @brief
+ * Linearly scales an original float to a float value inbetween a scale range
+ * Modules: None
+ * Pins: None
+ */
 float float_acceleration_scale( float x, float original_min, float original_max, float scaled_min, float scaled_max );
 
+/*
+ * @brief
+ * acceleration_init(), see acceleration_control.h for more info
+ */
 void acceleration_init() {
 	SIM_SCGC6 |= SIM_SCGC6_ADC0_MASK ; /* Enable the ADC0 Clock */
 	SIM_SCGC3 |= SIM_SCGC3_ADC1_MASK; /* Enable the ADC1 Clock */
@@ -87,6 +109,10 @@ void acceleration_init() {
 	ADC1_SC3 |= 0x111; // Turn on hardware averaging with 32 samples
 }
 
+/*
+ * @brief
+ * configure_acceleration(), see acceleration_control.h for more info
+ */
 void configure_acceleration() {
 	float * config_acceleration;
 	for( int i = 0; i < MAX_ACCELERATION_READINGS - 1; i++ ) {
@@ -99,6 +125,10 @@ void configure_acceleration() {
 	zero_acceleration[Z_AXIS] = config_acceleration[Z_AXIS] - 0.3; // Z-axis zero value (have to take off offset because z = 1 at rest )
 }
 
+/*
+ * @brief
+ * read_acceleration_data(), see acceleration_control.h for more info
+ */
 void read_acceleration_data() {
 	int x_accel, y_accel, z_accel;
 
@@ -134,6 +164,10 @@ void read_acceleration_data() {
 	}
 }
 
+/*
+ * @brief
+ * get_acceleration_data(), see acceleration_control.h for more info
+ */
 float * get_acceleration_data() {
 	// Add up all the acceleration values
 	for( int j = 0; j < NUMBER_OF_AXIS; j++ ) {
@@ -156,6 +190,10 @@ float * get_acceleration_data() {
 	return average_acceleration;
 }
 
+/*
+ * @brief
+ * get_unity_acceleration(), see acceleration_control.h for more info
+ */
 float * get_unity_acceleration() {
 	float * voltage_levels = get_acceleration_data();
 	voltage_levels[X_AXIS] = float_acceleration_scale( voltage_levels[X_AXIS], -0.3, 0.3, UNITY_MIN, UNITY_MAX );

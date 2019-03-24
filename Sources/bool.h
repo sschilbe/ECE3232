@@ -8,7 +8,7 @@
 *
 * Author: Meneley, Julia | Schilbe, Seth
 * Created on: 19/02/2019
-* Last Modified: 19/02/2019
+* Last Modified: 24/03/2019
 */
 
 #ifndef SOURCES_BOOL_H_
@@ -25,6 +25,10 @@ MACROS
 /*------------------------------------------------------------
 TYPES
 ------------------------------------------------------------*/
+/*
+ * @brief
+ * Define type for logical true and false
+ */
 typedef enum { false, true } boolean;
 
 /*------------------------------------------------------------
