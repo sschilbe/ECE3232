@@ -103,6 +103,7 @@ int main(void) {
 	boolean temp_power;
 	esp_msg message;
 	float * acceleration_data;
+
 	memset(&message, 0, sizeof(message));
 
 	for (;;) {
@@ -126,7 +127,7 @@ int main(void) {
 
 				read_acceleration_data();
 
-				if (game_started) {
+				//if (game_started) {
 					// Send the accelerometer data to the game
 					acceleration_data = get_unity_acceleration();
 					message.x = 1000 * acceleration_data[0];
@@ -135,7 +136,7 @@ int main(void) {
 
 					fill_player_message(&message, player, PLAYER_DATA_EVENT);
 					send_player_message(&message);
-				}
+				//}
 			}
 		} else {
 			set_led_on( INVALID_LED); // Turn all LEDS off
@@ -191,9 +192,6 @@ void process_game_message(esp_msg * message) {
 	case PLAYER_HIT_EVENT:
 		if( get_lost_life_count() <= 0 ) {
 			// The game was reset and we didn't get a message, reset the player accordingly
-			fill_player_message(&response, player, PLAYER_HIT_EVENT);
-			send_player_message(&response);
-
 			if (message->lives >= player.lives) {
 				player.lives = message->lives;
 				player.starting_lives = message->lives + 1;
