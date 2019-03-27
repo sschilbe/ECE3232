@@ -2,7 +2,19 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class FallingObject : MonoBehaviour {
+/**
+ *
+ * @file
+ * FallingObject.cs
+ *
+ * @brief
+ * State control for falling objects
+ *
+ * Author: Meneley, Julia | Schilbe, Seth
+ * Date Created: 19/02/2019
+ * Last Modified: 27/03/2019
+ */
+ public class FallingObject : MonoBehaviour {
 
 	public int speed = 10;
 	public int points = 5;

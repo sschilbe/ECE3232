@@ -1,6 +1,18 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
+/**
+ *
+ * @file
+ * SimpleObjectPool.cs
+ *
+ * @brief
+ * Pool of objects so that objects do not need to be constructed whenever an object is instantiated
+ *
+ * Author: Meneley, Julia | Schilbe, Seth
+ * Date Created: 19/02/2019
+ * Last Modified: 27/03/2019
+ */
 // A very simple object pooling class
 public class SimpleObjectPool : MonoBehaviour
 {

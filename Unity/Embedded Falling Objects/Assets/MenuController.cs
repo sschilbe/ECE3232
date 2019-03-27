@@ -5,6 +5,18 @@ using WindowsInput;
 using WindowsInput.Native;
 using UnityEngine.EventSystems;
 
+/**
+ *
+ * @file
+ * MenuController.cs
+ *
+ * @brief
+ * Control the simulated keypresses from the controller and which menu button is selected
+ *
+ * Author: Meneley, Julia | Schilbe, Seth
+ * Date Created: 19/02/2019
+ * Last Modified: 27/03/2019
+ */
 public class MenuController : MonoBehaviour {
     public static Controller controller;
 
@@ -19,14 +31,14 @@ public class MenuController : MonoBehaviour {
             return;
         }
 
-        /* button = GameObject.Find( "SettingsButton" );
-        
+		button = GameObject.Find( "BackButton" );
+
         if( button != null ) {
             EventSystem.current.SetSelectedGameObject( button );
             return;
-        } */
+        }
 
-		button = GameObject.Find( "BackButton" );
+        button = GameObject.Find( "PlayAgainButton" );
 
         if( button != null ) {
             EventSystem.current.SetSelectedGameObject( button );
@@ -44,6 +56,8 @@ public class MenuController : MonoBehaviour {
             } else if( controller.xSpeed < -0.5f ) {
                 input.Keyboard.KeyPress( VirtualKeyCode.UP );
                 changed = true;
+            } else if( controller.ySpeed > 0.5f || controller.ySpeed < -0.5f ) {
+                input.Keyboard.KeyPress( VirtualKeyCode.RETURN );
             }
         }
 

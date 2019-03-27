@@ -6,6 +6,18 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 
+/**
+ *
+ * @file
+ * SampleController.cs
+ *
+ * @brief
+ * Manage state of visualization of menu
+ *
+ * Author: Meneley, Julia | Schilbe, Seth
+ * Date Created: 19/02/2019
+ * Last Modified: 27/03/2019
+ */
 public class SampleController : MonoBehaviour
 {
     public Button   button;

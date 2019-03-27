@@ -6,6 +6,18 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.IO.Ports;
 
+/**
+ *
+ * @file
+ * ControllerList.cs
+ *
+ * @brief
+ * Manages a list of controllers and there associated states
+ *
+ * Author: Meneley, Julia | Schilbe, Seth
+ * Date Created: 19/02/2019
+ * Last Modified: 27/03/2019
+ */
 public enum MsgId { 
     CONNECT_EVENT, 	// Device has been connected to the game
 	DISCONNECT_EVENT,		// Device has been disconnected from the game

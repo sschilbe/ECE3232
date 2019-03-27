@@ -87,9 +87,13 @@ void fill_player_message(esp_msg * message, Player player, int msg_id);
 
 void process_game_message(esp_msg * message);
 
-float v[N+1] = {1.0,1.5,2.0,2.5,3.0,2.0,2.0,2.0,2.0,2.0,2.0,0};
-float f[N+1] = {1500,1500,1500,1500,1500,1000,1500,2000,2500,3000,3500,0};
-float t[N+1] = {0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0};
+float v[N+1];
+float f[N+1];
+float t[N+1];
+
+float v_init[N+1] = {1.0,1.5,2.0,2.5,3.0,2.0,2.0,2.0,2.0,2.0,2.0,0};
+float f_init[N+1] = {1500,1500,1500,1500,1500,1000,1500,2000,2500,3000,3500,0};
+float t_init[N+1] = {0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0};
 
 /*------------------------------------------------------------
  PROCEDURES
@@ -104,7 +108,10 @@ int main(void) {
 	esp_msg message;
 	float * acceleration_data;
 
-	memset(&message, 0, sizeof(message));
+	memset( &message, 0, sizeof(message) );
+	memcpy( v, v_init, sizeof( v ) );
+	memcpy( f, f_init, sizeof( f ) );
+	memcpy( t, t_init, sizeof( t ) );
 
 	for (;;) {
 		// If the switch has been pressed toggle the power state
@@ -179,6 +186,10 @@ void process_game_message(esp_msg * message) {
 
 		set_led_on( GREEN);
 
+		memcpy( v, v_init, sizeof( v ) );
+		memcpy( f, f_init, sizeof( f ) );
+		memcpy( t, t_init, sizeof( t ) );
+
 		fill_player_message(&response, player, CONNECT_EVENT);
 		send_player_message(&response);
 		break;
@@ -195,6 +206,10 @@ void process_game_message(esp_msg * message) {
 			if (message->lives >= player.lives) {
 				player.lives = message->lives;
 				player.starting_lives = message->lives + 1;
+
+				memcpy( v, v_init, sizeof( v ) );
+				memcpy( f, f_init, sizeof( f ) );
+				memcpy( t, t_init, sizeof( t ) );
 			} else {
 				player.lives--;
 			}
@@ -202,6 +217,7 @@ void process_game_message(esp_msg * message) {
 			for( int i = 0; i < N; i++ ) {
 				f[i] += 1000;
 			}
+
 			// Play a tone on the speaker as a ratio of the current lives compared with the starting lives
 			play_buzzer(v,f,t,11);
 			reset_lost_life_count();

@@ -5,6 +5,18 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 
+/**
+ *
+ * @file
+ * PlayerManager.cs
+ *
+ * @brief
+ * Manage the state of the player
+ *
+ * Author: Meneley, Julia | Schilbe, Seth
+ * Date Created: 19/02/2019
+ * Last Modified: 27/03/2019
+ */
 public class PlayerManager : MonoBehaviour {
 
 	public int speed;
@@ -16,6 +28,7 @@ public class PlayerManager : MonoBehaviour {
 	public bool pause = false;
 	private float timeToLifeLost = 0;
 	// Use this for initialization
+
 	void Start () {
 		pause = false;
 		speed = 25;	
@@ -88,9 +101,10 @@ public class PlayerManager : MonoBehaviour {
 	}
 
 	void GameOver() {
-		//gameObject.SetActive( false );
 		pause = true;
 		gameOverPanel.SetActive( true );
+		MenuController menu = new MenuController();
+		menu.MenuChanged();
 	}
 
 	public void PlayAgain() {

@@ -29,8 +29,8 @@ MACROS
 #define ORIGINAL_MAX 				( 0xFFFF )
 #define SCALED_MIN 					( 0.0 )
 #define SCALED_MAX					( 3.3 )
-#define UNITY_MIN 					( -1.0 )
-#define UNITY_MAX					( 1.0 )
+#define UNITY_MIN 					( -3.0 )
+#define UNITY_MAX					( 3.0 )
 
 #define NUMBER_OF_AXIS				( 3 )
 #define MAX_ACCELERATION_READINGS 	( 5 )
@@ -135,7 +135,7 @@ void read_acceleration_data() {
 	ADC0_SC1A = 0b01101 & ADC_SC1_ADCH_MASK; 		// Write to SC1A to start conversion of SE13 on PTB3
 	while( ADC0_SC2 & ADC_SC2_ADACT_MASK ); 		// Conversion in progress
 	while( !( ADC0_SC1A & ADC_SC1_COCO_MASK ) ); 	// Wait until conversion complete
-	z_accel = ADC0_RA;
+	x_accel = ADC0_RA;
 
 	ADC1_SC1A = 0b01110 & ADC_SC1_ADCH_MASK; 		// Write to SC1A to start conversion of SE14 on PTB10
 	while( ADC1_SC2 & ADC_SC2_ADACT_MASK ); 		// Conversion in progress
@@ -145,7 +145,7 @@ void read_acceleration_data() {
 	ADC1_SC1A = 0b01111 & ADC_SC1_ADCH_MASK; 		// Write to SC1A to start conversion of SE15 on PTB11
 	while( ADC1_SC2 & ADC_SC2_ADACT_MASK ); 		// Conversion in progress
 	while( !( ADC1_SC1A & ADC_SC1_COCO_MASK ) ); 	// Wait until conversion complete
-	x_accel = ADC1_RA;
+	z_accel = ADC1_RA;
 
 	/*
 	 * After some filtering we know that the minimum value will be 0 and the max value will be 0xFFFF
@@ -196,9 +196,9 @@ float * get_acceleration_data() {
  */
 float * get_unity_acceleration() {
 	float * voltage_levels = get_acceleration_data();
-	voltage_levels[X_AXIS] = float_acceleration_scale( voltage_levels[X_AXIS], -0.3, 0.3, UNITY_MIN, UNITY_MAX );
-	voltage_levels[Y_AXIS] = float_acceleration_scale( voltage_levels[Y_AXIS], -0.3, 0.3, UNITY_MIN, UNITY_MAX );
-	voltage_levels[Z_AXIS] = float_acceleration_scale( voltage_levels[Z_AXIS], -0.3, 0.3, UNITY_MIN, UNITY_MAX );
+	voltage_levels[X_AXIS] = float_acceleration_scale( voltage_levels[X_AXIS], -0.9, 0.9, UNITY_MIN, UNITY_MAX );
+	voltage_levels[Y_AXIS] = float_acceleration_scale( voltage_levels[Y_AXIS], -0.9, 0.9, UNITY_MIN, UNITY_MAX );
+	voltage_levels[Z_AXIS] = float_acceleration_scale( voltage_levels[Z_AXIS], -0.9, 0.9, UNITY_MIN, UNITY_MAX );
 
 	return voltage_levels;
 }
